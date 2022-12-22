@@ -1,145 +1,97 @@
-# Пример приложения на Streamlit
-В этой папке находится пример приложения на Streamlit для визуализации работы YOLOv5. 
+# Sample application on Streamlit
+This folder contains an example application on Streamlit to visualize the work of YOLOv5.
 
-[Streamlit](https://docs.streamlit.io/en/stable/getting_started.html) - фреймворк, позволяющий создать приложение для визуализации данных или демонстрации возможностей модели. Фреймворк предназначен для быстрого построения UI, однако не позволяет выполнять персонализацию элементов страницы с помощью CSS. Для настройки внешнего вида интерфейса необходимо использовать другой фреймворк, например, Dash Plotly
+[Streamlit](https://docs.streamlit.io/en/stable/getting_started.html) is a framework that allows you to create an application for visualizing data or demonstrating the capabilities of a model. The framework is designed to quickly build a UI, but does not allow you to personalize page elements using CSS. To customize the appearance of the interface, you need to use another framework, for example, Dash Plotly
 
-[YOLOv5](https://github.com/ultralytics/yolov5) - CNN для разспознавания объектов. Используется [версия модели](https://pytorch.org/hub/ultralytics_yolov5/) из библиотки Torch Hub, обученная обнаружению 80 классов объектов из датасета MS COCO. Список классов можно найти в файле `config.py`
+[YOLOv5](https://github.com/ultralytics/yolov5) - CNN for object recognition. The [version of the model] (https://pytorch.org/hub/ultralytics_yolov5/) from the Torch Hub library is used, trained to detect 80 object classes from the MS COCO dataset. The list of classes can be found in the `config.py` file
 
-## Пример работы
-Полную версию демонстрации можно найти на [youtube](https://youtu.be/f_gbRXk6V0Y)
+## Working example
+Full demo can be found on [youtube](https://youtu.be/f_gbRXk6V0Y)
 ![caption](content/demo.gif)
 
-## Требования
-Работоспособность проверена на Ubuntu 20.04 Python 3.8. Ожидается, что приложение должно работать на Python 3.6-3.9
+## Requirements
+Performance tested on Ubuntu 20.04 Python 3.8. Application is expected to run on Python 3.6-3.9
 
-## Файлы приложения
-* `app.py` - скрипт для запуска приложения
-* `config.py` - скрипт, содержащий константы
+## Application files
+* `app.py` - script to run the application
+* `config.py` - script containing constants
 
-## Запуск
-Находясь в папке `dashboards/streamlit_guide`, выполнить
+## Run
+Being in the `dashboards/streamlit_guide` folder, execute
 ```
 pip install -r requirements.txt
 streamlit run app.py
 ```
-и перейти по ссылке http://localhost:8501
+and follow the link http://localhost:8501
 
-Или через docker
+Or via docker
 ```
 docker build -t st .
-docker run -p 8501:8501 st
+docker run -p 8501:8501st
 ```
-**Замечание:** При использовании docker Streamlit выведет в терминале External URL и Network URL. При переходе по ним веб камера не будет работать из-за протокола HTTP (нужен HTTPS). Но если перейти по ссылке http://localhost:8501, то проблема будет решена
+**Note:** When using docker, Streamlit will display the External URL and Network URL in the terminal. When you navigate through them, the webcam will not work due to the HTTP protocol (requires HTTPS). But if you follow the link http://localhost:8501, then the problem will be solved
 
-## Детали реализации
+## Implementation details
 ### Streamlit
-Streamlit позволяет выводить на странице приожения текст, изображения, видео, аудио, графики, датафреймы. Также возможно настроить стрим с веб камеры. Подробнее обо всех поддерживаемых для вывода типов данных можно узнать в [документации](https://docs.streamlit.io/en/stable/api.html).
+Streamlit allows you to display text, images, video, audio, graphics, dataframes on the application page. It is also possible to set up a stream from a webcam. You can learn more about all data types supported for output in [documentation](https://docs.streamlit.io/en/stable/api.html).
 
-**Добавление компонентов**
+**Adding Components**
 
-Добавление элементов интерфейса на страницу осуществляется в том порядке, в котором были вызваны соответствующие им функции:
+Interface elements are added to the page in the order in which the corresponding functions were called:
 ```
 import streamlit as st
 st.title('Streamlit app')
 st.markdown('Streamlit is **_really_ cool**.')
 if st.button('Say hello'):
-    st.write('Why hello there')
+     st.write('Why hello there')
 else:
-    st.write('Goodbye')
+     st.write('Goodbye')
 ```
 ![example](content/streamlit_simple_app.png)
 
-Все добавленные таким образом элменты будут размещены в основной части страницы. Однако добавив `sidebar` при создании элемента, он будет добавлен на боковой виджет:
+All elements added in this way will be placed in the main part of the page. However, by adding `sidebar` when creating the element, it will be added to the sidebar widget:
 ```
 ...
 if st.sidebar.button('Say hello'):
-    st.write('Why hello there')
+     st.write('Why hello there')
 else:
-    st.write('Goodbye')
+     st.write('Goodbye')
 ```
 ![example](content/simple_app_sidebar.png)
 
-**Кэширование**
+**Caching**
 
-При изменении состояния любого элемента управления весь код скрипта с приложением будет выполнен заново. Чтобы избежать повторного выполнения вычислительно затратных операций, в Streamlit применяется кэширование. Для включения кэширования функции необходимо указать декоратор [streamlit.cache()](https://docs.streamlit.io/en/stable/api.html#streamlit.cache):
+When the state of any control changes, the entire code of the script with the application will be executed again. To avoid re-execution of computationally expensive operations, Streamlit uses caching. To enable function caching, you must specify the [streamlit.cache()](https://docs.streamlit.io/en/stable/api.html#streamlit.cache) decorator:
 ```
 @st.cache(max_entries=2)
 def get_yolo5(model_type='s'):
-    ...
+     ...
 ```
-Для того чтобы решить, можно ли использовать хранящиеся в кэше данные, Streamlit проверяет:
-1. Входные параметры
-2. Тело функции
-3. Значения глобальных переменных, используемых в теле функции
+To decide whether the data stored in the cache can be used, Streamlit checks:
+1. Input parameters
+2. Function body
+3. Values of global variables used in the function body
 
-Если в кэше присутствует объект, совпадающий с текущим состоянием функции по всем трем пунктам, то он будет использован. По умолчанию вместимость кэша не ограничена, но с помощью аргумента `max_entries` можно установить лимит. 
+If there is an object in the cache that matches the current state of the function on all three counts, then it will be used. By default, the cache capacity is unlimited, but you can set a limit with the `max_entries` argument.
 
-При работе с кэшем необходимо помнить, что для входных и выходных данных в кэше будет сохранена ссылка на них. Следовательно любое изменение этих данных в коде после вызова кэшируемой функции повлечен изменение их значений в кэше. Поэтому необходимо создавать копии входных и выходных данных:
+When working with the cache, you must remember that for the input and output data in the cache, a link to them will be stored. Therefore, any change to this data in the code after calling the cached function results in a change in their values in the cache. Therefore, it is necessary to create copies of the input and output data:
 ```
-# get_preds - кэшируемая функция
+# get_preds is a cacheable function
 result = get_preds(img)
-result_copy = result.copy() #для списков - deepcopy(list)
+result_copy = result.copy() #for lists - deepcopy(list)
 img_copy = img.copy()
-# result_copy и img_copy можно использовать, не боясь изменить result и img
+# result_copy and img_copy can be used without fear of changing result and img
 ```
-Подробнее о кэшировании можно прочесть в [документации](https://docs.streamlit.io/en/stable/caching.html)
+You can read more about caching in [documentation](https://docs.streamlit.io/en/stable/caching.html)
 
-### streamlit-webrtc
-Для стриминга аудио и видео по сети в том числе в веб камеры, необходимо использовать библиотеку [streamlit-webrtc](https://github.com/whitphx/streamlit-webrtc). 
+###streamlit-webrtc
+To stream audio and video over the network, including to web cameras, you must use the [streamlit-webrtc] library (https://github.com/whitphx/streamlit-webrtc).
 
-С реализацией стрминга видео с веб камеры можно ознакомиться в файле `app.py`. Класс `VideoTransformer` позволяет задать обработку каждого кадра в функции `transform()`. Для инициализации стрима используется функция `webrtc_streamer()`. Для того, чтобы при обновлениях скрипта приложения передавать новые значения глобальных переменных в `VideoTransformer`, необходимо объявить их как атрибуты класса и при обновлении скрипта передавать:
+The implementation of streaming video from a webcam can be found in the `app.py` file. The `VideoTransformer` class allows you to specify the processing of each frame in the `transform()` function. The `webrtc_streamer()` function is used to initialize the stream. In order to pass new values of global variables to `VideoTransformer` when updating the application script, you must declare them as class attributes and when updating the script, pass:
 ```
 WEBRTC_CLIENT_SETTINGS = ClientSettings(
-        media_stream_constraints={"video": True, "audio": False},
-    )
+         media_stream_constraints={"video": True, "audio": False},
+     )
 
 ctx = webrtc_streamer(
-        key="example", 
-        video_transformer_factory=VideoTransformer,
-        client_settings=WEBRTC_CLIENT_SETTINGS,)
-
-# необходимо для того, чтобы объект VideoTransformer подхватил новые данные
-# после обновления страницы streamlit
-if ctx.video_transformer:
-    ctx.video_transformer.model = model
-    ctx.video_transformer.rgb_colors = rgb_colors
-    ctx.video_transformer.target_class_ids = target_class_ids
-```
-В коде выше использован класс `ClientSettings()`. Он позволяет при выключить/включить стриминг аудио/видео.
-
-### YOLOv5
-Для загрузки YOLOv5 был использован torch.hub() - это модуль pytorch, позволяющий загружать предобученные модели.
-```
-import torch
-from PIL import Image
-import cv2
-
-# Model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5x', pretrained=True)
-
-# load image
-img = Image.open('example.png')
-
-# or
-# img = cv2.imread('example.png')
-# img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-preds = model([img])
-preds = preds.xyxy[0].numpy()
-# preds = preds.xyxy[0].cpu().numpy() # если используется gpu
-```
-* `xyxy` вернет найденные боксы в формате:
-```
-[[xmin,ymin,xmax,ymax,conf,label],
-...]
-```
-* `xyxyn` вернет нормализованные координаты
-* `xywh`,`xywhn` вернут ширину и высоту бокса вместо xmax и ymax, соответственно
-
-Для получения боксов только нужных классов:
-```
-target_class_ids = [0,1] # люди и велосипеды
-#обязательно копируем, если работает с кэшем Streamlit
-result_copy = result.copy() 
-result_copy = result_copy[np.isin(result_copy[:,-1], target_class_ids)]
-```
+         key="examp"
